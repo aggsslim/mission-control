@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mission Control — Tim AI</title>
+<style>
+:root{--bg:#0b0c0e;--panel:#121316;--panel2:#17181c;--line:#232429;--txt:#e7e8ea;--mut:#9ba0a6;--mut2:#6b7078;--acc:#5b8cff;--ok:#34c47c;--warn:#e0a63f;--bad:#e5534b;--rad:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--txt);font:14px/1.5 -apple-system,"Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--acc);text-decoration:none}
+button{font:inherit;cursor:pointer}
+#app{display:flex;min-height:100dvh}
+/* sidebar */
+#side{width:228px;flex:0 0 228px;background:var(--panel);border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100dvh}
+#side .brand{padding:2px 10px 14px}
+#side .brand b{font-size:15px;letter-spacing:.02em}
+#side .brand span{display:block;color:var(--mut);font-size:11px;margin-top:2px}
+.nav{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:0;color:var(--mut);padding:8px 10px;border-radius:10px;font-size:13.5px}
+.nav:hover{background:var(--panel2);color:var(--txt)}
+.nav.on{background:var(--panel2);color:var(--txt)}
+.nav .bdg{margin-left:auto;background:#26272d;color:var(--mut);border-radius:99px;font-size:11px;padding:0 7px;line-height:18px}
+#side .foot{margin-top:auto;padding:10px;color:var(--mut2);font-size:11.5px}
+/* main */
+#main{flex:1;min-width:0;display:flex;flex-direction:column}
+#top{position:sticky;top:0;z-index:5;background:rgba(11,12,14,.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+#top h1{font-size:15px;font-weight:600}
+#top .clock{color:var(--mut);font-size:12.5px}
+#top .sp{flex:1}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:7px 14px;font-size:13px}
+.btn:hover{border-color:#34353c}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.warnb{border-color:var(--warn);color:var(--warn)}
+#view{padding:22px;max-width:1240px;width:100%;margin:0 auto}
+h2.cap{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:600;margin:20px 0 10px}
+h2.cap:first-child{margin-top:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.grid7{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.card h3{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.card .sub{color:var(--mut);font-size:12px;margin-top:2px}
+.card .big{font-size:22px;font-weight:650;margin-top:8px}
+.card .row{display:flex;justify-content:space-between;gap:8px;color:var(--mut);font-size:12.5px;margin-top:6px}
+.card .row b{color:var(--txt);font-weight:550;text-align:right}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;font-size:11px;font-weight:600;padding:2px 9px;line-height:18px;background:#26272d;color:var(--mut)}
+.pill::before{content:"";width:7px;height:7px;border-radius:99px;background:var(--mut2)}
+.pill.working{color:#bfe9d4}.pill.working::before{background:var(--ok)}
+.pill.idle{color:var(--mut)}.pill.idle::before{background:var(--mut2)}
+.pill.paused{color:#f3ddae}.pill.paused::before{background:var(--warn)}
+.pill.on{color:#bfe9d4}.pill.on::before{background:var(--ok)}
+.pill.off{color:var(--mut)}.pill.off::before{background:var(--mut2)}
+.pill.bad{color:#f6c1bd}.pill.bad::before{background:var(--bad)}
+.bar{height:8px;border-radius:99px;background:#26272d;overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;background:var(--acc);border-radius:99px}
+.bar i.hot{background:var(--bad)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 14px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.item .t{font-weight:550}
+.item .m{color:var(--mut);font-size:12px}
+.item .sp{flex:1}
+pre.log{background:#0e0f11;border:1px solid var(--line);border-radius:12px;padding:14px;font:12px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#c9ccd1;overflow:auto;max-height:65dvh;white-space:pre-wrap;word-break:break-word}
+.empty{color:var(--mut2);padding:18px;border:1px dashed var(--line);border-radius:12px;text-align:center}
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);padding:6px 16px}
+details summary{cursor:pointer;padding:10px 0;font-weight:600;font-size:13.5px}
+details .list{padding-bottom:12px}
+.qbtns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+input[type=text]{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:8px 12px;font:inherit;flex:1;min-width:180px}
+select{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:8px;font:inherit}
+form.qform{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+/* office 3D */
+#office-wrap{position:relative;border:1px solid var(--line);border-radius:var(--rad);overflow:hidden;background:#0e0f13;height:min(68dvh,640px)}
+#office-wrap canvas{display:block;width:100%;height:100%;touch-action:none}
+#office-hint{position:absolute;left:12px;bottom:10px;color:#c9ccd1;font-size:12px;background:rgba(10,10,12,.55);padding:4px 10px;border-radius:99px;pointer-events:none}
+#office-detail{margin-top:12px}
+@media (max-width:768px){
+  #app{flex-direction:column}
+  #side{width:100%;flex:none;height:auto;position:sticky;top:0;z-index:9;flex-direction:row;align-items:center;overflow-x:auto;padding:8px}
+  #side .brand{padding:0 8px 0 2px;white-space:nowrap}
+  #side .brand span,#side .foot{display:none}
+  .nav{width:auto;white-space:nowrap}
+  #view{padding:10px}
+  #view.office-mode{padding:0}
+  #office-wrap{height:calc(100dvh - 118px);border-radius:0;border-left:0;border-right:0}
+  body.office-body{overflow:hidden}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <div class="brand"><b>Mission Control</b><span>Pusat kendali tim AI</span></div>
+    <div id="nav"></div>
+    <div class="foot">Data nyata dari ledger lokal.<br>Tanpa simulasi.</div>
+  </aside>
+  <div id="main">
+    <header id="top">
+      <h1 id="top-title">Virtual Office</h1>
+      <span class="clock" id="clock">—</span>
+      <span class="sp"></span>
+      <span id="tunnel-badge"></span>
+      <button class="btn warnb" id="btn-dispatch">⏸ Pause Dispatch</button>
+    </header>
+    <main id="view"></main>
+  </div>
+</div>
+<script src="vendor/three.min.js"></script>
+<script>
+'use strict';
+var STATE=null, VIEW='office', $view=document.getElementById('view');
+var MENUS=[
+ ['office','Virtual Office'],['agents','Agent Overview'],['queue','Task Queue'],
+ ['metrics','System Metrics'],['vps','VPS Status'],['schedules','Tugas Terjadwal'],
+ ['token','Token Status'],['fleet','Agent Fleet'],['log','Real-Time Log']];
+var navEl=document.getElementById('nav');
+MENUS.forEach(function(m){
+  var b=document.createElement('button'); b.className='nav'; b.id='nav-'+m[0];
+  b.innerHTML=m[1]+(m[0]==='queue'?'<span class="bdg" id="nav-queue-count">0</span>':'');
+  b.onclick=function(){VIEW=m[0];render();};
+  navEl.appendChild(b);
+});
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function fmtBytes(b){if(b==null)return'—';var u=['B','KB','MB','GB','TB'],i=0;while(b>=1024&&i<4){b/=1024;i++;}return b.toFixed(b>=100?0:b>=10?1:2)+' '+u[i];}
+function fmtUptime(s){if(s==null)return'—';var d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return (d?d+' hari ':'')+h+' jam '+m+' mnt';}
+function fmtTime(ts){try{return new Date(ts).toLocaleString('id-ID',{timeZone:'Asia/Makassar',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}catch(e){return ts||'—';}}
+function pill(st){return '<span class="pill '+esc(st)+'">'+esc(st.toUpperCase())+'</span>';}
+async function postJSON(url,body){var r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.json().catch(function(){return{};});}
+document.getElementById('btn-dispatch').onclick=async function(){
+  if(!STATE)return; await postJSON('#',{paused:!STATE.dispatch_paused}); refresh();
+};
+async function refresh(){
+  try{ STATE=await (await fetch('state.json?t='+Date.now())).json(); }catch(e){ return; }
+  document.getElementById('clock').textContent='WITA '+new Date(STATE.now_wita).toLocaleString('id-ID',{timeZone:'Asia/Makassar',weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  var qc=STATE.queue.filter(function(q){return q.status==='queued';}).length;
+  var nq=document.getElementById('nav-queue-count'); if(nq)nq.textContent=qc;
+  var tb=document.getElementById('tunnel-badge');
+  if(STATE.vps.tunnel.url){ tb.innerHTML='<a href="'+esc(STATE.vps.tunnel.url)+'" target="_blank" rel="noopener"><span class="pill '+(STATE.vps.tunnel.online?'on':'off')+'">Tunnel '+(STATE.vps.tunnel.online?'ONLINE':'OFFLINE')+'</span></a>'; }
+  else tb.innerHTML='<span class="pill off">Tunnel OFFLINE</span>';
+  var bd=document.getElementById('btn-dispatch');
+  bd.textContent=STATE.dispatch_paused?'▶ Resume Dispatch':'⏸ Pause Dispatch';
+  MENUS.forEach(function(m){document.getElementById('nav-'+m[0]).classList.toggle('on',VIEW===m[0]);});
+  document.getElementById('top-title').textContent=MENUS.find(function(m){return m[0]===VIEW;})[1];
+  render();
+}
+function render(){
+  if(!STATE)return;
+  document.body.classList.toggle('office-body',VIEW==='office');
+  $view.classList.toggle('office-mode',VIEW==='office');
+  if(VIEW==='office')return renderOffice();
+  officeStop();
+  if(VIEW==='agents')return renderAgents();
+  if(VIEW==='queue')return renderQueue();
+  if(VIEW==='metrics')return renderMetrics();
+  if(VIEW==='vps')return renderVps();
+  if(VIEW==='schedules')return renderSchedules();
+  if(VIEW==='token')return renderToken();
+  if(VIEW==='fleet')return renderFleet();
+  if(VIEW==='log')return renderLog();
+}
+/* ---------- Agent Overview / Fleet ---------- */
+function agentCard(a,detail){
+  return '<div class="card"><h3>'+esc(a.id)+' '+pill(a.status)+'</h3><div class="sub">'+esc(a.role)+'</div>'
+    +(a.active_task?'<div class="row"><span>Task aktif</span><b>'+esc(a.active_task.title||a.active_task.task_id)+'</b></div>':'<div class="row"><span>Task aktif</span><b>—</b></div>')
+    +'<div class="row"><span>Selesai / Gagal</span><b>'+a.done_count+' / '+a.failed_count+'</b></div>'
+    +(detail?'<div class="row"><span>Ciri visual</span><b>'+esc(a.visual)+'</b></div><div class="sub" style="margin-top:8px">'+esc(a.caps.join(' • '))+'</div>':'')
+    +'</div>';
+}
+function renderAgents(){ $view.innerHTML='<h2 class="cap">Semua Agent</h2><div class="grid">'+STATE.agents.map(function(a){return agentCard(a,false);}).join('')+'</div>'; }
+function renderFleet(){ $view.innerHTML='<h2 class="cap">Agent Fleet — Profil & Kemampuan</h2><div class="grid">'+STATE.agents.map(function(a){return agentCard(a,true);}).join('')+'</div>'; }
+/* ---------- Task Queue ---------- */
+function renderQueue(){
+  var queued=STATE.queue.filter(function(q){return q.status==='queued';});
+  var done=STATE.queue.filter(function(q){return q.status!=='queued';});
+  var types=[['Research','Tono'],['Coding','Dani'],['Vision','Jaka'],['Design','Mu']];
+  var h='<h2 class="cap">Quick Task</h2><div class="qbtns">'+types.map(function(t){return '<button class="btn" data-qt="'+t[0]+'" data-ag="'+t[1]+'">+ '+t[0]+' → '+t[1]+'</button>';}).join('')+'</div>'
+    +'<form class="qform" id="qf"><input type="text" id="qprompt" placeholder="Tulis tugas cepat…" required><select id="qagent">'+STATE.agents.map(function(a){return '<option>'+a.id+'</option>';}).join('')+'</select><button class="btn primary" type="submit">Antrekan</button></form>'
+    +'<h2 class="cap">Antrean ('+queued.length+')</h2><div class="list">'
+    +(queued.length?queued.map(function(q){return '<div class="item"><div><div class="t">'+esc(q.prompt)+'</div><div class="m">'+esc(q.agent)+' • '+fmtTime(q.ts)+'</div></div><span class="sp"></span>'+pill('queued')+'</div>';}).join(''):'<div class="empty">Antrean kosong.</div>')
+    +'</div>'
+    +'<h2 class="cap">Riwayat Tugas Agent (ledger)</h2><div class="list">'
+    +(STATE.tasks.length?STATE.tasks.slice().reverse().slice(0,60).map(function(t){return '<div class="item"><div><div class="t">'+esc(t.title||t.task_id)+'</div><div class="m">'+esc(t.agent)+' • '+esc(t.task_id)+' • '+fmtTime(t.ts)+(t.detail?' • '+esc(t.detail):'')+'</div></div><span class="sp"></span>'+pill(t.status==='done'?'on':t.status==='failed'?'bad':t.status==='started'||t.status==='progress'?'working':'off').replace(/>(.*?)</,'>'+t.status.toUpperCase()+'<')+'</div>';}).join(''):'<div class="empty">Ledger kosong.</div>')
+    +'</div>';
+  $view.innerHTML=h;
+  $view.querySelectorAll('[data-qt]').forEach(function(b){ b.onclick=async function(){ await postJSON('#',{prompt:'Quick task: '+b.dataset.qt,agent:b.dataset.ag}); refresh(); }; });
+  document.getElementById('qf').onsubmit=async function(e){ e.preventDefault(); await postJSON('#',{prompt:document.getElementById('qprompt').value,agent:document.getElementById('qagent').value}); refresh(); };
+}
+/* ---------- System Metrics ---------- */
+function renderMetrics(){
+  var s=STATE.system, usedPct=s.mem_total_bytes?Math.round((s.mem_used_bytes/s.mem_total_bytes)*100):0;
+  $view.innerHTML='<h2 class="cap">System Metrics — dari /proc (nyata)</h2><div class="grid">'
+   +'<div class="card"><h3>CPU Load</h3><div class="big">'+s.loadavg.map(function(x){return x.toFixed(2);}).join(' · ')+'</div><div class="sub">loadavg 1 / 5 / 15 menit • '+s.cores+' core</div><div class="row"><span>Model</span><b>'+esc(s.cpu_model)+'</b></div></div>'
+   +'<div class="card"><h3>Memory (host /proc)</h3><div class="big">'+fmtBytes(s.mem_used_bytes)+' / '+fmtBytes(s.mem_total_bytes)+'</div><div class="bar"><i style="width:'+usedPct+'%"></i></div><div class="sub">terpakai '+usedPct+'% • tersedia '+fmtBytes(s.mem_avail_bytes)+'</div></div>'
+   +'<div class="card"><h3>Uptime Sistem</h3><div class="big">'+fmtUptime(s.uptime_sec)+'</div><div class="sub">sejak boot (/proc/uptime)</div></div>'
+   +'</div><p class="sub" style="color:var(--mut);margin-top:12px">Catatan: memory di sini adalah angka host dari /proc/meminfo. Untuk pemakaian container, lihat kartu MEMORY (CONTAINER) di menu VPS Status.</p>';
+}
+/* ---------- VPS Status ---------- */
+function renderVps(){
+  var v=STATE.vps, d=v.disk;
+  var diskCard=d?'<div class="card"><h3>Disk</h3><div class="big">'+fmtBytes(d.used_bytes)+' / '+fmtBytes(d.total_bytes)+'</div><div class="bar"><i class="'+(d.pct>=90?'hot':'')+'" style="width:'+d.pct+'%"></i></div><div class="sub">'+d.pct+'% terpakai • sisa '+fmtBytes(d.avail_bytes)+' • mount '+esc(d.mount)+'</div></div>':'<div class="card"><h3>Disk</h3><div class="sub">df tidak terbaca</div></div>';
+  var tun=v.tunnel.url?'<a href="'+esc(v.tunnel.url)+'" target="_blank" rel="noopener">'+esc(v.tunnel.url)+'</a>':'belum ada URL publik';
+  $view.innerHTML='<h2 class="cap">VPS Status</h2><div class="grid7">'
+   + diskCard
+   +'<div class="card"><h3>CPU</h3><div class="big" style="font-size:16px">'+esc(v.cpu.model)+'</div><div class="sub">'+v.cpu.cores+' core • load '+v.cpu.loadavg.map(function(x){return x.toFixed(2);}).join(' · ')+'</div></div>'
+   +'<div class="card"><h3>'+esc(v.memory_container.label)+'</h3><div class="big">'+fmtBytes(v.memory_container.container_bytes)+'</div><div class="sub">'+esc(v.memory_container.sub)+'</div><div class="sub">RSS semua proses di /proc/&lt;pid&gt;/statm × page size</div></div>'
+   +'<div class="card"><h3>Uptime Server</h3><div class="big">'+fmtUptime(v.uptime_sec)+'</div><div class="sub">/proc/uptime</div></div>'
+   +'<div class="card"><h3>Tunnel</h3><div style="margin-top:8px">'+(v.tunnel.url?pill(v.tunnel.online?'on':'off').replace(/>(.*?)</,'>'+(v.tunnel.online?'ONLINE':'OFFLINE')+'<'):'<span class="pill off">OFFLINE</span>')+'</div><div class="sub" style="margin-top:8px;word-break:break-all">'+tun+'</div></div>'
+   +'<div class="card"><h3>OS</h3><div class="big" style="font-size:16px">'+esc(v.os)+'</div><div class="sub">/etc/os-release</div></div>'
+   +'<div class="card"><h3>Watchdog</h3>'+(v.watchdog?'<div class="row"><span>Terakhir jalan</span><b>'+fmtTime(v.watchdog.ts)+'</b></div><div class="row"><span>Event</span><b>'+esc(v.watchdog.event)+'</b></div>':'<div class="sub" style="margin-top:8px">belum pernah jalan</div>')+'</div>'
+   +'</div>';
+}
+/* ---------- Schedules ---------- */
+function schedItem(s){
+  return '<div class="item"><div><div class="t">'+esc(s.title)+'</div><div class="m">'+esc(s.id)+(s.owner?' • '+esc(s.owner):'')+' • '+esc(s.timezone)+' • berikutnya: '+(s.next_iso?fmtTime(s.next_iso):'—')+'</div></div><span class="sp"></span><span class="pill off">'+esc(s.label)+'</span>'+(s.enabled?'<span class="pill on">ON</span>':'<span class="pill off">OFF</span>')+'</div>';
+}
+function renderSchedules(){
+  var mine=STATE.schedules.filter(function(s){return !s.is_system;});
+  var sys=STATE.schedules.filter(function(s){return s.is_system;});
+  $view.innerHTML='<h2 class="cap">Jadwal Saya ('+mine.length+')</h2><div class="list">'
+    +(mine.length?mine.map(schedItem).join(''):'<div class="empty">Tidak ada jadwal terdeteksi di ~/workspace/cron.d atau goals/*/crons.</div>')
+    +'</div><h2 class="cap">Jadwal Sistem</h2><details><summary>Jadwal Sistem ('+sys.length+') — klik untuk membuka</summary><div class="list">'
+    +(sys.length?sys.map(schedItem).join(''):'<div class="empty">Tidak ada jadwal sistem.</div>')
+    +'</div></details>';
+}
+/* ---------- Token ---------- */
+function renderToken(){
+  var t=STATE.token;
+  $view.innerHTML='<h2 class="cap">Token Status</h2><div class="card" style="max-width:560px"><h3>'+(t.connected?'Terhubung':'BELUM TERHUBUNG')+'</h3>'
+   +(t.connected?'<pre class="log" style="margin-top:10px">'+esc(JSON.stringify(t,null,2))+'</pre>':'<p class="sub" style="margin-top:8px">'+esc(t.note||'Sumber data token belum disambungkan.')+'</p>')
+   +'</div>';
+}
+/* ---------- Log ---------- */
+function renderLog(){ $view.innerHTML='<h2 class="cap">Real-Time Log</h2><pre class="log">'+esc(STATE.log.join('\n'))+'</pre>'; }
+/* ---------- Virtual Office 3D (Three.js r128 lokal) ---------- */
+var O=null; // office context
+function officeStop(){ if(O&&O.raf){cancelAnimationFrame(O.raf); O.raf=null;} }
+function renderOffice(){
+  if(!document.getElementById('office-wrap')){
+    $view.innerHTML='<div id="office-wrap"><div id="office-hint">Seret untuk memutar • Scroll untuk zoom • Klik robot = pause/resume agent itu</div></div><div id="office-detail"></div>';
+    officeInit();
+  }
+  officeSyncTargets();
+  renderOfficeDetail();
+}
+function renderOfficeDetail(){
+  var el=document.getElementById('office-detail'); if(!el||!STATE)return;
+  el.innerHTML='<div class="grid" style="margin-top:12px">'+STATE.agents.map(function(a){
+    return '<div class="card"><h3>'+esc(a.id)+' '+pill(a.status)+'</h3><div class="sub">'+esc(a.active_task?('Kerja: '+esc(a.active_task.title||a.active_task.task_id)):'Tidak ada task aktif')+'</div></div>';
+  }).join('')+'</div>';
+}
+function makeLabel(text){
+  var c=document.createElement('canvas'); c.width=256; c.height=64; var g=c.getContext('2d');
+  g.fillStyle='rgba(10,10,12,0.65)'; g.beginPath(); g.roundRect ? g.roundRect(28,8,200,46,12) : g.rect(28,8,200,46); g.fill();
+  g.fillStyle='#e7e8ea'; g.font='600 30px sans-serif'; g.textAlign='center'; g.fillText(text,128,40);
+  var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true}));
+  sp.scale.set(1.5,0.38,1); return sp;
+}
+function buildRobot(a){
+  var grp=new THREE.Group();
+  var bodyMat=new THREE.MeshStandardMaterial({color:0xd8dbe0,roughness:.55,metalness:.25});
+  var darkMat=new THREE.MeshStandardMaterial({color:0x2b2e35,roughness:.6,metalness:.3});
+  var accMat=new THREE.MeshStandardMaterial({color:0x5b8cff,roughness:.5});
+  var body=new THREE.Mesh(new THREE.BoxGeometry(.62,.78,.38),bodyMat); body.position.y=1.02; grp.add(body);
+  var head=new THREE.Group(); head.position.y=1.78;
+  var skull=new THREE.Mesh(new THREE.BoxGeometry(.52,.44,.44),bodyMat); head.add(skull);
+  var eyeMat=new THREE.MeshBasicMaterial({color:0x9fd8ff});
+  var eL=new THREE.Mesh(new THREE.PlaneGeometry(.07,.09),eyeMat); eL.position.set(-.11,.02,.225); head.add(eL);
+  var eR=eL.clone(); eR.position.x=.11; head.add(eR);
+  grp.add(head);
+  function arm(side){ var g=new THREE.Group(); g.position.set(.38*side,1.32,0); var m=new THREE.Mesh(new THREE.BoxGeometry(.13,.55,.13),darkMat); m.position.y=-.26; g.add(m); grp.add(g); return g; }
+  var armL=arm(-1), armR=arm(1);
+  var legL=new THREE.Mesh(new THREE.BoxGeometry(.16,.55,.16),darkMat); legL.position.set(-.16,.28,0); grp.add(legL);
+  var legR=legL.clone(); legR.position.x=.16; grp.add(legR);
+  // aksesoris per peran
+  if(a.id==='Anca'){ var band=new THREE.Mesh(new THREE.TorusGeometry(.3,.035,8,20,Math.PI),darkMat); band.position.y=.06; band.rotation.z=0; head.add(band); var mic=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.3),darkMat); mic.position.set(.24,-.18,.14); mic.rotation.z=.7; head.add(mic); }
+  if(a.id==='Mu'){ var beret=new THREE.Mesh(new THREE.CylinderGeometry(.3,.32,.07,20),new THREE.MeshStandardMaterial({color:0x8b5cf6,roughness:.8})); beret.position.set(.05,.27,0); beret.rotation.z=.12; head.add(beret);
+    var tab=new THREE.Mesh(new THREE.BoxGeometry(.4,.03,.3),darkMat); tab.position.set(-.55,.95,.3); tab.rotation.x=-.5; grp.add(tab);
+    var sty=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.3),accMat); sty.position.set(-.5,1.1,.38); sty.rotation.x=.8; grp.add(sty); }
+  if(a.id==='Cipu'){ var cupL=new THREE.Mesh(new THREE.BoxGeometry(.1,.24,.26),darkMat); cupL.position.set(-.3,0,0); head.add(cupL); var cupR=cupL.clone(); cupR.position.x=.3; head.add(cupR);
+    var band2=new THREE.Mesh(new THREE.TorusGeometry(.3,.03,8,20,Math.PI),darkMat); band2.position.y=.05; head.add(band2);
+    var rec=new THREE.Mesh(new THREE.SphereGeometry(.045,10,10),new THREE.MeshBasicMaterial({color:0xff3b30})); rec.position.set(0,.3,.1); head.add(rec); grp.userData.rec=rec; }
+  if(a.id==='Jaka'){ var cam=new THREE.Mesh(new THREE.CylinderGeometry(.09,.11,.16,16),darkMat); cam.rotation.x=Math.PI/2; cam.position.set(0,.02,.3); head.add(cam);
+    var lens=new THREE.Mesh(new THREE.CircleGeometry(.055,16),new THREE.MeshBasicMaterial({color:0x66d9ff})); lens.position.set(0,.02,.39); head.add(lens); eL.visible=eR.visible=false; }
+  if(a.id==='Tono'){ var ant=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.4),darkMat); ant.position.set(.15,.42,0); head.add(ant);
+    var tip=new THREE.Mesh(new THREE.SphereGeometry(.04,10,10),new THREE.MeshBasicMaterial({color:0xffc44d})); tip.position.set(.15,.63,0); head.add(tip);
+    var mag=new THREE.Group(); var ring=new THREE.Mesh(new THREE.TorusGeometry(.11,.018,8,24),accMat); mag.add(ring); var hd=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.18),darkMat); hd.position.y=-.18; mag.add(hd); mag.position.set(.55,1.05,.3); grp.add(mag); }
+  if(a.id==='Dani'){ var kb=new THREE.Mesh(new THREE.BoxGeometry(.55,.04,.2),darkMat); kb.position.set(0,.78,.32); kb.rotation.x=.25; grp.add(kb); }
+  var label=makeLabel(a.id); label.position.y=2.3; grp.add(label);
+  grp.userData={armL:armL,armR:armR,eyes:[eL,eR],head:head};
+  return grp;
+}
+function officeInit(){
+  var wrap=document.getElementById('office-wrap');
+  var W=wrap.clientWidth||800, H=wrap.clientHeight||480;
+  var renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  renderer.setSize(W,H); wrap.appendChild(renderer.domElement);
+  var scene=new THREE.Scene(); scene.background=new THREE.Color(0x101318);
+  scene.add(new THREE.AmbientLight(0xffffff,.55));
+  var key=new THREE.DirectionalLight(0xffffff,.75); key.position.set(6,10,6); scene.add(key);
+  var camera=new THREE.PerspectiveCamera(50,W/H,.1,200);
+  var cam={theta:.55,phi:1.05,r:17,tx:0,ty:1,tz:0};
+  // lantai + dinding
+  var floor=new THREE.Mesh(new THREE.PlaneGeometry(30,18),new THREE.MeshStandardMaterial({color:0x1a1c20,roughness:.95}));
+  floor.rotation.x=-Math.PI/2; scene.add(floor);
+  var wall=new THREE.Mesh(new THREE.PlaneGeometry(30,9),new THREE.MeshStandardMaterial({color:0x14161a,roughness:.95}));
+  wall.position.set(0,4.5,-6.5); scene.add(wall);
+  // jendela kota malam (tekstur canvas)
+  var cc=document.createElement('canvas'); cc.width=1024; cc.height=320; var cg=cc.getContext('2d');
+  cg.fillStyle='#0a1224'; cg.fillRect(0,0,1024,320);
+  for(var i=0;i<260;i++){ var bx=Math.random()*1024,by=90+Math.random()*220,bw=18+Math.random()*36,bh=40+Math.random()*120;
+    cg.fillStyle='#0d1830'; cg.fillRect(bx,by,bw,bh);
+    for(var wy=by+6;wy<by+bh-6;wy+=11)for(var wx=bx+4;wx<bx+bw-4;wx+=9){ if(Math.random()<.4){ cg.fillStyle=Math.random()<.85?'rgba(255,196,90,.9)':'rgba(160,210,255,.9)'; cg.fillRect(wx,wy,4,5);} } }
+  cg.fillStyle='rgba(230,235,255,.9)'; cg.beginPath(); cg.arc(920,52,22,0,7); cg.fill();
+  var win=new THREE.Mesh(new THREE.PlaneGeometry(15,4.6),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cc)}));
+  win.position.set(-4,4.6,-6.4); scene.add(win);
+  var frame=new THREE.Mesh(new THREE.BoxGeometry(15.3,4.9,.08),new THREE.MeshStandardMaterial({color:0x23252b})); frame.position.set(-4,4.6,-6.48); scene.add(frame); scene.add(win);
+  // tekstur monitor: kode scrolling + chart animasi
+  function monTex(draw){ var c=document.createElement('canvas'); c.width=256; c.height=160; return {c:c,g:c.getContext('2d'),tex:new THREE.CanvasTexture(c),draw:draw}; }
+  var codeLines=['$ node server.js','GET /api/state 200','ledger.append(started)','function dispatch(task){','  agent.assign(task);','  return queue.push();','}','// rendering frame…','const ok = await qc();','upload.prepare(video);','tokens: connected ✓','build: passing','> npm run deploy','watchdog: alive','scan drive… 3 file','metadata ok ✓'];
+  var codeT=monTex(function(g,t){ g.fillStyle='#0b1020'; g.fillRect(0,0,256,160); g.font='11px monospace'; var off=Math.floor(t/28)%codeLines.length;
+    for(var i=0;i<11;i++){ var ln=codeLines[(off+i)%codeLines.length]; g.fillStyle=i%3?'#7ee2a8':'#8ab8ff'; g.fillText(ln,8,18+i*13);} });
+  var chartData=[]; for(var j=0;j<40;j++)chartData.push(80+Math.sin(j*.4)*30);
+  var chartT=monTex(function(g,t){ g.fillStyle='#0b1020'; g.fillRect(0,0,256,160); g.strokeStyle='#26314d'; for(var gy=20;gy<160;gy+=28){g.beginPath();g.moveTo(0,gy);g.lineTo(256,gy);g.stroke();}
+    chartData.push(80+Math.sin(t/500)*34+(Math.random()*10-5)); chartData.shift();
+    g.strokeStyle='#5b8cff'; g.lineWidth=2; g.beginPath(); chartData.forEach(function(v,i){ var x=i*(256/39),y=150-v; i?g.lineTo(x,y):g.moveTo(x,y); }); g.stroke(); g.lineWidth=1; });
+  // meja + kursi + monitor + tanaman + lampu status
+  var deskPos=[], lampMats={};
+  var deskMat=new THREE.MeshStandardMaterial({color:0x2a2c31,roughness:.8});
+  var chairMat=new THREE.MeshStandardMaterial({color:0x33353c,roughness:.85});
+  STATE.agents.forEach(function(a,i){
+    var x=-7.5+i*3, z=2.4; deskPos.push({x:x,z:z});
+    var desk=new THREE.Mesh(new THREE.BoxGeometry(2.3,.08,1),deskMat); desk.position.set(x,.78,z); scene.add(desk);
+    [[-1,-.4],[1,-.4],[-1,.4],[1,.4]].forEach(function(o){ var leg=new THREE.Mesh(new THREE.BoxGeometry(.07,.78,.07),deskMat); leg.position.set(x+o[0]*1.05,.39,z+o[1]); scene.add(leg); });
+    var chair=new THREE.Mesh(new THREE.BoxGeometry(.55,.07,.55),chairMat); chair.position.set(x,.5,z-.95); scene.add(chair);
+    var back=new THREE.Mesh(new THREE.BoxGeometry(.55,.6,.07),chairMat); back.position.set(x,.95,z-1.22); scene.add(back);
+    function monitor(tex,dx,ry){ var scr=new THREE.Mesh(new THREE.PlaneGeometry(.86,.54),new THREE.MeshBasicMaterial({map:tex})); scr.position.set(x+dx,1.25,z+.18); scr.rotation.y=ry; scene.add(scr);
+      var bez=new THREE.Mesh(new THREE.BoxGeometry(.92,.6,.04),chairMat); bez.position.set(x+dx,1.25,z+.15); bez.rotation.y=ry; scene.add(bez); scene.add(scr); }
+    monitor(codeT.tex,-.5,-.18); monitor(chartT.tex,.5,.18);
+    var lampMat=new THREE.MeshBasicMaterial({color:0x6b7078});
+    var lamp=new THREE.Mesh(new THREE.SphereGeometry(.06,10,10),lampMat); lamp.position.set(x+1.0,1.05,z+.3); scene.add(lamp);
+    lampMats[a.id]=lampMat;
+    if(i%2===0){ var pot=new THREE.Mesh(new THREE.CylinderGeometry(.16,.13,.3,10),new THREE.MeshStandardMaterial({color:0x4a3b2c})); pot.position.set(x+1.35,.15,z+1.6); scene.add(pot);
+      var leaf=new THREE.Mesh(new THREE.SphereGeometry(.34,10,10),new THREE.MeshStandardMaterial({color:0x2e7d4f,roughness:.9})); leaf.position.set(x+1.35,.62,z+1.6); scene.add(leaf); }
+  });
+  // robot
+  var chars={};
+  STATE.agents.forEach(function(a,i){
+    var g=buildRobot(a);
+    g.position.set(-7.5+i*3,0,-3.6);
+    g.userData.target=new THREE.Vector3(-7.5+i*3,0,-3.6);
+    g.userData.seatY=0; g.userData.phase=Math.random()*6.28; g.userData.blinkAt=2+Math.random()*3;
+    g.userData.prevStatus=a.status; g.userData.hopUntil=0;
+    g.traverse(function(o){o.userData.agentId=a.id;});
+    scene.add(g); chars[a.id]=g;
+  });
+  O={renderer:renderer,scene:scene,camera:camera,cam:cam,chars:chars,deskPos:deskPos,lampMats:lampMats,codeT:codeT,chartT:chartT,raf:null,t0:performance.now()};
+  // kontrol kamera: drag putar + wheel zoom + touch
+  var el=renderer.domElement, drag=null, downAt=null;
+  el.addEventListener('pointerdown',function(e){ drag={x:e.clientX,y:e.clientY}; downAt={x:e.clientX,y:e.clientY,id:e.pointerId}; el.setPointerCapture(e.pointerId); });
+  el.addEventListener('pointermove',function(e){ if(!drag)return; cam.theta-=(e.clientX-drag.x)*.005; cam.phi=Math.min(1.45,Math.max(.35,cam.phi-(e.clientY-drag.y)*.005)); drag={x:e.clientX,y:e.clientY}; });
+  el.addEventListener('pointerup',function(e){
+    var wasDrag=drag; drag=null;
+    if(downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<6){ officeClick(e,el); }
+    downAt=null;
+  });
+  el.addEventListener('wheel',function(e){ e.preventDefault(); cam.r=Math.min(30,Math.max(7,cam.r+e.deltaY*.02)); },{passive:false});
+  window.addEventListener('resize',officeResize);
+  officeLoop();
+}
+function officeResize(){ if(!O)return; var wrap=document.getElementById('office-wrap'); if(!wrap)return;
+  var W=wrap.clientWidth,H=wrap.clientHeight; if(!W||!H)return;
+  O.renderer.setSize(W,H); O.camera.aspect=W/H; O.camera.updateProjectionMatrix(); }
+function officeClick(e,el){
+  if(!O||!STATE)return;
+  var r=el.getBoundingClientRect();
+  var mouse=new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  var rc=new THREE.Raycaster(); rc.setFromCamera(mouse,O.camera);
+  var hits=rc.intersectObjects(O.scene.children,true);
+  for(var i=0;i<hits.length;i++){ var id=hits[i].object.userData.agentId;
+    if(id){ var a=STATE.agents.find(function(x){return x.id===id;}); if(a){ postJSON('#',{agent:id,paused:!a.paused}).then(refresh); } return; } }
+}
+function officeSyncTargets(){
+  if(!O||!STATE)return;
+  STATE.agents.forEach(function(a,i){
+    var g=O.chars[a.id]; if(!g)return;
+    var lamp=O.lampMats[a.id];
+    if(a.status==='working'){ var d=O.deskPos[i]; g.userData.target.set(d.x,-.42,d.z-.95); if(lamp)lamp.color.setHex(0x34c47c); }
+    else if(a.status==='paused'){ g.userData.target.set(-7.5+i*3,0,-3.6); if(lamp)lamp.color.setHex(0xe0a63f); }
+    else { g.userData.target.set(-7.5+i*3,0,-3.6); if(lamp)lamp.color.setHex(0x6b7078); }
+    // cheer hop: transisi working → idle karena task done < 15 detik
+    if(g.userData.prevStatus==='working'&&a.status==='idle'&&a.last_done_ts){
+      if(Date.now()-Date.parse(a.last_done_ts)<15000) g.userData.hopUntil=performance.now()+1100;
+    }
+    g.userData.prevStatus=a.status; g.userData.status=a.status;
+  });
+}
+function officeLoop(){
+  if(!O)return;
+  var t=(performance.now()-O.t0)/1000;
+  O.codeT.draw(O.codeT.g,t*10); O.codeT.tex.needsUpdate=true;
+  O.chartT.draw(O.chartT.g,performance.now()); O.chartT.tex.needsUpdate=true;
+  Object.keys(O.chars).forEach(function(id){
+    var g=O.chars[id], u=g.userData;
+    g.position.lerp(u.target,.06);
+    var hop=performance.now()<u.hopUntil?Math.abs(Math.sin(t*10))*.35:0;
+    g.position.y=u.target.y+hop;
+    var working=u.status==='working'&&hop===0;
+    if(working){ u.armL.rotation.x=-.9+Math.sin(t*11+u.phase)*.28; u.armR.rotation.x=-.9+Math.cos(t*12.5+u.phase)*.28; }
+    else { u.armL.rotation.x=Math.sin(t*1.4+u.phase)*.06; u.armR.rotation.x=Math.cos(t*1.2+u.phase)*.06; }
+    g.rotation.z=working?0:Math.sin(t*1.1+u.phase)*.02;
+    var bl=(t+u.phase)%3.4<.12? .1:1;
+    u.eyes.forEach(function(e){e.scale.y=bl;});
+    if(u.rec)u.rec.material.color.setHex(Math.sin(t*5)>0?0xff3b30:0x661512);
+    g.rotation.y+= ((working?0:Math.PI)-g.rotation.y)*.04;
+  });
+  var c=O.cam;
+  O.camera.position.set(c.tx+c.r*Math.sin(c.phi)*Math.sin(c.theta), c.ty+c.r*Math.cos(c.phi), c.tz+c.r*Math.sin(c.phi)*Math.cos(c.theta));
+  O.camera.lookAt(c.tx,c.ty,c.tz);
+  O.renderer.render(O.scene,O.camera);
+  O.raf=requestAnimationFrame(officeLoop);
+}
+refresh();
+setInterval(refresh,3000);
+</script>
+</body>
+</html>
